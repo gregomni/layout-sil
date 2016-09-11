@@ -1,0 +1,38 @@
+#!/usr/bin/swift
+//
+//  layout-sil
+//
+//  Created by Greg Titus on 9/11/16.
+//
+
+import Cocoa
+
+var output = "digraph sil {\n"
+
+while true {
+  guard let line = readLine() else { break }
+  guard line.hasPrefix("bb") else { continue }
+  guard let predsRange = line.range(of: " // Preds: ") else { continue }
+  
+  let characters = line.characters
+  let bbNameEnd: String.CharacterView.Index
+  if let index = characters.index(of: "(") {
+    bbNameEnd = index
+  } else {
+    bbNameEnd = characters.index(of: ":")!
+  }
+  let bbName = String(characters.prefix(upTo: bbNameEnd))
+  let preds = String(characters.suffix(from: predsRange.upperBound))
+
+  for pred in preds.components(separatedBy: " ") {
+    output = output.appending("  \(pred) -> \(bbName)\n")
+  }
+}
+output = output.appending("}\n")
+
+let directory = NSTemporaryDirectory()
+let fileName = NSUUID().uuidString + ".dot"
+guard let fullURL = NSURL.fileURL(withPathComponents: [directory, fileName]) else { exit(1) }
+
+try output.write(to: fullURL, atomically: false, encoding: String.Encoding.utf8)
+NSWorkspace.shared().openFile(fullURL.path, withApplication: "OmniGraffle")
